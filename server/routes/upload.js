@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Resolve uploads dir from the *server* root (one level up from routes/).
-const uploadDir = path.resolve(__dirname, '../../public/uploads');
+const uploadDir = path.resolve(__dirname, '../public/uploads');
 
 // Ensure the upload directory exists.
 fs.mkdirSync(uploadDir, { recursive: true });
