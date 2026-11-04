@@ -16,12 +16,12 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       host: '0.0.0.0',
-      allowedHosts: ['diploma-content-anytime-iron.trycloudflare.com', 'promise-neck-voters-lib.trycloudflare.com'],
+      allowedHosts: [env.FRONTEND_HOST.toString() || 'localhost'],
       port: Number(env.FRONTEND_PORT) || undefined,
       strictPort: true,
       proxy: {
         '/api': {
-          target: `http://localhost:${env.BACKEND_PORT || 3001}`,
+          target: `http://localhost:${env.BACKEND_PORT || undefined}`,
           changeOrigin: true
         }
       }
