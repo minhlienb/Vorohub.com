@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import KeenSlider, { type KeenSliderInstance } from 'keen-slider';
 
 const COMMIT_PX = 96;
@@ -16,35 +16,9 @@ export function useShortViewerSlider(
   const trackRef = useRef<HTMLDivElement>(null);
   const sliderRef = useRef<KeenSliderInstance | null>(null);
   const draggingRef = useRef(false);
-  const pendingRebaseRef = useRef<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState(
     Math.max(0, Math.min(startIndex, feedCount - 1))
   );
-
-  const queueRebase = useCallback((index: number) => {
-    pendingRebaseRef.current = Math.max(0, index);
-  }, []);
-
-  const runWhenIdle = useCallback((callback: () => void) => {
-    let raf = 0;
-    let cancelled = false;
-    const check = () => {
-      const slider = sliderRef.current;
-      if (cancelled || !slider) return;
-      const busy =
-        draggingRef.current || slider.animator.active || slider.animator.targetIdx !== null;
-      if (busy) {
-        raf = requestAnimationFrame(check);
-        return;
-      }
-      callback();
-    };
-    check();
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(raf);
-    };
-  }, []);
 
   useEffect(() => {
     const scrollY = window.scrollY || window.pageYOffset || 0;
@@ -199,16 +173,6 @@ export function useShortViewerSlider(
     return () => cancelAnimationFrame(raf);
   }, [feedCount]);
 
-  useLayoutEffect(() => {
-    const nextIndex = pendingRebaseRef.current;
-    const slider = sliderRef.current;
-    if (nextIndex === null || !slider) return;
-
-    slider.update();
-    slider.moveToIdx(nextIndex, true);
-    setCurrentIndex(nextIndex);
-    pendingRebaseRef.current = null;
-  }, [feedCount]);
 
   useEffect(() => {
     const track = trackRef.current;
@@ -288,5 +252,5 @@ export function useShortViewerSlider(
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  return { overlayRef, trackRef, currentIndex, queueRebase, runWhenIdle };
+  return { overlayRef, trackRef, currentIndex };
 }

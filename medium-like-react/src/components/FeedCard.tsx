@@ -4,8 +4,7 @@ import { useSaveToggle } from '../hooks/useSaveToggle.js';
 import { makeExcerpt, normalizeTags } from '../lib/feedUtils.js';
 import type { Feed } from '../lib/api.js';
 
-// FeedCard renders a single article preview. Click anywhere on the
-// card (except the Save button) to open it.
+// Feed card preview.
 interface FeedCardProps {
   feed: Feed;
   onSavedChange?: (id: number, saved: boolean) => void;
@@ -16,8 +15,6 @@ export default function FeedCard({ feed, onSavedChange, onOpen }: FeedCardProps)
   const navigate = useNavigate();
   const { toggleSave } = useSaveToggle(onSavedChange);
 
-  // Excerpt is derived as PLAIN TEXT and rendered as a text child, so the
-  // card no longer depends on any assumption about what HTML is stored.
   const excerpt = useMemo(() => makeExcerpt(feed, 200), [feed.excerpt, feed.content]);
   const tags = useMemo(() => normalizeTags(feed.tags), [feed.tags]);
 

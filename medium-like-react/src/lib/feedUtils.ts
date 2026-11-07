@@ -36,9 +36,6 @@ export function normalizeTags(raw: unknown): string[] {
   return [...new Set(tags.map((t) => t.trim()).filter(Boolean))];
 }
 
-export function getFeedPruneCount(currentIndex: number, keepPrevious = 6): number {
-  return Math.max(0, Math.floor(currentIndex) - Math.max(0, Math.floor(keepPrevious)));
-}
 
 /**
  * HTML -> plain text. Parsed with DOMParser (inert document: scripts don't

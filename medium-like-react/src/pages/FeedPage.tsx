@@ -90,9 +90,6 @@ export default function FeedPage() {
     setFeeds((prev) => prev.map((f) => (f.id === id ? { ...f, saved } : f)));
   };
 
-  const pruneFeedsBefore = useCallback((count: number) => {
-    setFeeds((prev) => prev.slice(Math.min(count, prev.length)));
-  }, []);
 
   const handleOpen = (feed: Feed) => {
     if (getMode() === 'mobile') {
@@ -169,7 +166,6 @@ export default function FeedPage() {
           startIndex={viewerIndex}
           onClose={closeViewer}
           onLoadMore={hasMore ? loadMore : undefined}
-          onPruneFeedsBefore={pruneFeedsBefore}
           onIndexChange={setViewerIndex}
           onSaveChange={(id, saved) => {
             setFeeds((prev) => prev.map((f) => (f.id === id ? { ...f, saved } : f)));

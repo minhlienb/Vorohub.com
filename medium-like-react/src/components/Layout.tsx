@@ -7,8 +7,7 @@ import {
   isAuthenticated
 } from '../lib/auth.js';
 
-// Shared header. Mirrors the Barba version's headerNav() helper but
-// driven by NavLink so active styling is declarative.
+// App header.
 function Header() {
   const [email, setEmail] = useState(getUserEmail());
 
@@ -82,9 +81,7 @@ export default function Layout() {
   const location = useLocation();
   const navType = useNavigationType();
   const previousPathRef = useRef(location.pathname);
-  // ScrollRestoration (in App.tsx) restores scroll on popstate; for
-  // forward route navigation we want to land at the top. Same-path history
-  // state changes (such as opening ShortViewer) must preserve feed scroll.
+  // Scroll to top on forward navigation.
   useEffect(() => {
     const pathChanged = previousPathRef.current !== location.pathname;
     if (navType !== 'POP' && pathChanged) {

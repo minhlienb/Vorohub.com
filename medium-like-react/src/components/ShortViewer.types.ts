@@ -6,6 +6,5 @@ export interface ShortViewerProps {
   onClose: () => void;
   onLoadMore?: () => Promise<Feed[]> | Feed[];
   onSaveChange?: (feedId: number, saved: boolean) => void;
-  onPruneFeedsBefore: (count: number) => void;
   onIndexChange?: (index: number) => void;
 }
