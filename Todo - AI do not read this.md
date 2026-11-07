@@ -1,0 +1,2 @@
+- allow swipe to next feed with loading circle
+- allow preload next feeds
