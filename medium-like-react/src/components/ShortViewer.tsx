@@ -58,7 +58,11 @@ export default function ShortViewer({
 
   useEffect(() => {
     if (!onLoadMoreRef.current || loadingRef.current) return;
-    if (currentIndex < feeds.length - 2) return;
+    // Prefetch 5 slides early so KeenSlider.update() (new max)
+    // settles before the user reaches the old last slide.
+    // At length-2 the append lands exactly on the boundary swipe
+    // and the next() call hits the stale max and is dropped.
+    if (currentIndex < feeds.length - 5) return;
 
     loadingRef.current = true;
     setLoadingMore(true);
@@ -86,13 +90,32 @@ export default function ShortViewer({
     [navigate]
   );
 
+  // Stable prop for memoized ShortSlide (inline arrow = new fn every
+  // parent render = N re-renders per swipe).
+  const handleToggleSave = useCallback(
+    (feedId: number, saved: boolean) => {
+      void toggleSave(feedId, saved);
+    },
+    [toggleSave]
+  );
+
+  // Preload next slide's image (O(1)) so the next swipe doesn't stall
+  // on network/decode. Browser cache keeps bitmap until GC.
+  useEffect(() => {
+    const next = feeds[currentIndex + 1];
+    if (!next?.image_url) return;
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = next.image_url;
+  }, [currentIndex, feeds]);
+
   return (
     <div ref={overlayRef} className="short-overlay" data-mode="mobile">
-      <div className="short-progress" aria-hidden="true">
+      {/* <div className="short-progress" aria-hidden="true">
         {feeds.map((f, i) => (
           <span key={f.id} className={i === currentIndex ? 'active' : ''} />
         ))}
-      </div>
+      </div> */}
 
       <div ref={trackRef} className="short-track keen-slider">
         {feeds.map((feed, index) => {
@@ -105,7 +128,7 @@ export default function ShortViewer({
               feed={feed}
               isActive={nearActive}
               isSaved={isSaved}
-              onToggleSave={(feedId, saved) => void toggleSave(feedId, saved)}
+              onToggleSave={handleToggleSave}
               onOpenFull={openFull}
             />
           );

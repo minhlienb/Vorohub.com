@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSaveToggle } from '../hooks/useSaveToggle.js';
 import { makeExcerpt, normalizeTags } from '../lib/feedUtils.js';
@@ -11,22 +11,28 @@ interface FeedCardProps {
   onOpen?: (feed: Feed) => void;
 }
 
-export default function FeedCard({ feed, onSavedChange, onOpen }: FeedCardProps) {
+// Memoized: FeedPage re-renders on page loads/search while viewer is
+// open; unchanged cards must bail out (stable feed ref + stable
+// callbacks from FeedPage) instead of re-rendering O(N) behind overlay.
+const FeedCard = memo(function FeedCard({ feed, onSavedChange, onOpen }: FeedCardProps) {
   const navigate = useNavigate();
   const { toggleSave } = useSaveToggle(onSavedChange);
 
   const excerpt = useMemo(() => makeExcerpt(feed, 200), [feed.excerpt, feed.content]);
   const tags = useMemo(() => normalizeTags(feed.tags), [feed.tags]);
 
-  const handleSaveClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    void toggleSave(feed.id, !!feed.saved);
-  };
+  const handleSaveClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      void toggleSave(feed.id, !!feed.saved);
+    },
+    [toggleSave, feed.id, feed.saved]
+  );
 
-  const handleOpen = () => {
+  const handleOpen = useCallback(() => {
     if (onOpen) onOpen(feed);
     else navigate(`/read/${feed.slug || feed.id}`);
-  };
+  }, [onOpen, navigate, feed]);
 
   return (
     <article className="feed-card" onClick={handleOpen}>
@@ -65,4 +71,6 @@ export default function FeedCard({ feed, onSavedChange, onOpen }: FeedCardProps)
       </div>
     </article>
   );
-}
+});
+
+export default FeedCard;

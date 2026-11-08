@@ -23,7 +23,13 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [viewerIndex, setViewerIndex] = useState(0);
+  // Ref, not state: ShortViewer reports every swipe via onIndexChange.
+  // Updating state would re-render the whole FeedCard list (O(N))
+  // per swipe while the viewer is open. startIndex is only read on
+  // viewer mount (slider initial), so a ref is sufficient.
+  const viewerIndexRef = useRef(0);
+  const feedsRef = useRef<Feed[]>([]);
+  feedsRef.current = feeds;
   const sentinelRef = useRef<HTMLDivElement>(null);
   const email = getUserEmail();
 
@@ -86,24 +92,30 @@ export default function FeedPage() {
     return () => observer.disconnect();
   }, [hasMore, loading, search, loadPage]);
 
-  const handleSavedChange = (id: number, saved: boolean) => {
+  const handleSavedChange = useCallback((id: number, saved: boolean) => {
     setFeeds((prev) => prev.map((f) => (f.id === id ? { ...f, saved } : f)));
-  };
+  }, []);
 
+  const handleViewerIndexChange = useCallback((index: number) => {
+    viewerIndexRef.current = index;
+  }, []);
 
-  const handleOpen = (feed: Feed) => {
-    if (getMode() === 'mobile') {
-      // Open the in-place ShortViewer overlay instead of routing
-      // away — that way the feed list state is preserved under
-      // the overlay and the user lands back where they were when
-      // they close it.
-      const idx = feeds.findIndex((f) => f.id === feed.id);
-      setViewerIndex(idx >= 0 ? idx : 0);
-      openViewer();
-    } else {
-      navigate(`/read/${feed.slug || feed.id}`);
-    }
-  };
+  const handleOpen = useCallback(
+    (feed: Feed) => {
+      if (getMode() === 'mobile') {
+        // Open the in-place ShortViewer overlay instead of routing
+        // away — that way the feed list state is preserved under
+        // the overlay and the user lands back where they were when
+        // they close it.
+        const idx = feedsRef.current.findIndex((f) => f.id === feed.id);
+        viewerIndexRef.current = idx >= 0 ? idx : 0;
+        openViewer();
+      } else {
+        navigate(`/read/${feed.slug || feed.id}`);
+      }
+    },
+    [navigate, openViewer]
+  );
 
   const loadMore = useCallback(async (): Promise<Feed[]> => {
     if (!hasMore || loading) return [];
@@ -163,14 +175,11 @@ export default function FeedPage() {
       {viewerOpen && (
         <ShortViewer
           feeds={feeds}
-          startIndex={viewerIndex}
+          startIndex={viewerIndexRef.current}
           onClose={closeViewer}
           onLoadMore={hasMore ? loadMore : undefined}
-          onIndexChange={setViewerIndex}
-          onSaveChange={(id, saved) => {
-            setFeeds((prev) => prev.map((f) => (f.id === id ? { ...f, saved } : f)));
-            handleSavedChange(id, saved);
-          }}
+          onIndexChange={handleViewerIndexChange}
+          onSaveChange={handleSavedChange}
         />
       )}
     </main>

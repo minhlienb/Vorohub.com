@@ -19,7 +19,10 @@ export function useShortViewerSlider(
   const [currentIndex, setCurrentIndex] = useState(
     Math.max(0, Math.min(startIndex, feedCount - 1))
   );
-
+  const currentIndexRef = useRef(currentIndex);
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
   useEffect(() => {
     const scrollY = window.scrollY || window.pageYOffset || 0;
     const previous = {
@@ -156,21 +159,31 @@ export function useShortViewerSlider(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Update KeenSlider when new slides append. Try immediately (no
+  // initial 50ms debounce) so the new max index is known before the
+  // user swipes to the old boundary — otherwise next() hits the
+  // stale max (loop:false) and the swipe is dropped. If busy
+  // (drag/anim), retry — was a raw rAF spin for all N slopes.
   useEffect(() => {
-    let raf = 0;
-    const updateWhenIdle = () => {
+    let timer = 0;
+    let retries = 0;
+    const tryUpdate = () => {
       const slider = sliderRef.current;
       if (!slider) return;
       const busy =
-        draggingRef.current || slider.animator.active || slider.animator.targetIdx !== null;
-      if (busy) {
-        raf = requestAnimationFrame(updateWhenIdle);
+        draggingRef.current ||
+        slider.animator.active ||
+        slider.animator.targetIdx !== null;
+      if (busy && retries < 10) {
+        retries += 1;
+        timer = window.setTimeout(tryUpdate, 100);
         return;
       }
+      if (busy) return;
       slider.update();
     };
-    updateWhenIdle();
-    return () => cancelAnimationFrame(raf);
+    timer = window.setTimeout(tryUpdate, 0);
+    return () => window.clearTimeout(timer);
   }, [feedCount]);
 
 
@@ -182,13 +195,11 @@ export function useShortViewerSlider(
     let startY = 0;
     let blockingSlider = false;
 
-    const getActiveScrollEl = (): HTMLElement | null => {
-      const slides = track.querySelectorAll<HTMLElement>('.short-slide');
-      return slides[currentIndex]?.querySelector('.short-scroll') ?? null;
-    };
-
+    // O(1) child access via index — was querySelectorAll('.short-slide')
+    // (O(N) DOM scan) on EVERY touchmove at 60-120Hz.
     const isAtScrollBoundary = (direction: number): boolean => {
-      const el = getActiveScrollEl();
+      const el = (track.children[currentIndexRef.current] as HTMLElement | undefined)
+        ?.querySelector<HTMLElement>('.short-scroll');
       if (!el) return true;
       if (direction < 0) return el.scrollTop <= EPSILON;
       return el.scrollTop + el.clientHeight >= el.scrollHeight - EPSILON;
@@ -236,7 +247,7 @@ export function useShortViewerSlider(
       track.removeEventListener('touchstart', onTouchStart);
       track.removeEventListener('touchmove', onTouchMove, { capture: true });
     };
-  }, [currentIndex]);
+  }, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

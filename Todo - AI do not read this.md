@@ -1,2 +1,3 @@
 - allow swipe to next feed with loading circle
 - allow preload next feeds
+- use reranking model for recommendation system - use to display popular result
