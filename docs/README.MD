@@ -8,4 +8,4 @@
 
 ## AI LLM Convention
 - Only leave one-line comment right before a method/funtion
-- Never leave detailed comment inside a method/funtion its body
+- Never leave detailed comment inside a method/funtion its body; only leave comment decision why choosing to do that
